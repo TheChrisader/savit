@@ -8,14 +8,18 @@ export interface SavitI {
   stageFile: (path: string) => boolean;
 }
 
+export interface BranchesI {
+  [name: string]: BranchI;
+}
+
 export class Savit implements SavitI {
   name: string;
   branch: BranchI;
-  private branches: Branch[] | null;
+  private branches: BranchesI;
 
   constructor(name?: string) {
     this.name = name || "default";
-    this.branches = [];
+    this.branches = {};
 
     const branch = new Branch("main", null);
     this.add(branch);
@@ -23,7 +27,11 @@ export class Savit implements SavitI {
   }
 
   private add(branch: BranchI) {
-    this.branches?.push(branch);
+    if (!(branch.name in this.branches)) {
+      this.branches[branch.name] = branch;
+    } else {
+      console.log(`${branch.name} branch already exists`);
+    }
   }
 
   checkout(name?: string): BranchI {
@@ -32,16 +40,8 @@ export class Savit implements SavitI {
       return this.branch;
     }
 
-    const branchIndex = this.branches?.findIndex(
-      (branch: BranchI) => branch.name === name
-    );
-
-    if (
-      branchIndex !== undefined &&
-      branchIndex !== -1 &&
-      this.branches?.length
-    ) {
-      this.branch = this.branches[branchIndex];
+    if (name in this.branches) {
+      this.branch = this.branches[name];
       console.info(`Switched to branch: ${this.branch.name}`);
       return this.branch;
     }
