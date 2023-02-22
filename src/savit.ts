@@ -1,5 +1,6 @@
 import { Branch, BranchI } from "./branch";
 import { Add } from "./add";
+import createSavitFolder from "./utils/createFolder";
 
 export interface SavitI {
   name: string;
@@ -24,6 +25,8 @@ export class Savit implements SavitI {
     const branch = new Branch("main", null);
     this.add(branch);
     this.branch = branch;
+
+    createSavitFolder();
   }
 
   private add(branch: BranchI) {

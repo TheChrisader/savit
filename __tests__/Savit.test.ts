@@ -1,6 +1,7 @@
 import { Savit } from "../src/savit";
 import { Commit } from "../src/commit";
-import { resolve } from "path";
+
+import fs from "fs";
 
 describe("Savit", () => {
   test("should return repo name properly", () => {
@@ -15,6 +16,13 @@ describe("Savit", () => {
 
     expect(commit?.message).toEqual("message");
     expect(repo.name).toEqual("repository");
+  });
+
+  test("should create savit folder", () => {
+    new Savit("repo");
+
+    const doesFolderExist = fs.existsSync(".savit");
+    expect(doesFolderExist).toEqual(true);
   });
 
   test("should return commit history", () => {
