@@ -15,6 +15,15 @@ export interface HDTI {
   path: string;
   leaves: LeafI[];
   nodes: Map<string, NodeI | string> | undefined;
+  getFileTree?: () => Promise<void>;
+  getHash?: (path: string) => Promise<string | undefined>;
+  hashFile?: (path: string) => Promise<string>;
+  hashDirectory?: (path: string) => Promise<string>;
+  buildTree?: () => void;
+  addNode?: (path: string) => void;
+  removeNode?: (path: string) => void;
+  compare?: (tree: Map<string, NodeI | string> | undefined) => string[] | null;
+  validate?: (path: string) => Promise<boolean | undefined>;
 }
 
 class HDT implements HDTI {
@@ -32,14 +41,10 @@ class HDT implements HDTI {
   }
 
   async getHash(path: string) {
-    let stats = await fs.lstat(path);
-    if (stats.isDirectory()) {
-      let node = this.nodes?.get(path) as NodeI;
-      return node.hash;
-    } else {
-      let leaf = this.leaves.find((leaf) => leaf.path === path);
-      return leaf?.hash;
-    }
+    let node = this.nodes?.get(path) as NodeI;
+    if (node) return node.hash;
+    let leaf = this.leaves.find((leaf) => leaf.path === path);
+    return leaf?.hash;
   }
 
   static async hashFile(path: string) {
