@@ -1,16 +1,19 @@
 import fs from "fs";
 
-function createSavitFolder() {
+function createSavitFolder(path: string = "") {
+  if (path) {
+    path = path + "/";
+  }
   try {
-    fs.mkdirSync(".savit");
-    fs.writeFileSync(".savit/HEAD.txt", "null");
-    fs.writeFileSync(".savit/index.txt", "");
-    fs.mkdirSync(".savit/objects");
-    fs.mkdirSync(".savit/refs");
-    fs.mkdirSync(".savit/refs/heads");
-    fs.mkdirSync(".savit/refs/tags");
+    fs.mkdirSync(path + ".savit");
+    fs.writeFileSync(path + ".savit/HEAD.txt", "null");
+    fs.writeFileSync(path + ".savit/index.txt", "");
+    fs.mkdirSync(path + ".savit/objects");
+    fs.mkdirSync(path + ".savit/refs");
+    fs.mkdirSync(path + ".savit/refs/heads");
+    fs.mkdirSync(path + ".savit/refs/tags");
     fs.writeFileSync(
-      ".savit/refs/heads/main.txt",
+      path + ".savit/refs/heads/main.txt",
       "pointer to latest commit on main branch, which should be null on init"
     );
   } catch (err: any) {
