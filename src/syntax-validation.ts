@@ -1,4 +1,5 @@
 import { Commit } from "./commit";
+import HDT from "./objects/hdt";
 import { SavitI } from "./savit";
 
 const VALID_VALUES = [
@@ -93,7 +94,11 @@ const isCommitCommandValid = (
       console.error("commit should be less than 50 characters");
     }
     const commitMessage = splitMessage;
-    savit.branch.commit = new Commit(commitMessage, savit.branch.commit);
+    savit.branch.commit = new Commit(
+      commitMessage,
+      savit.branch.commit,
+      savit.snapshot
+    );
     return true;
   }
 };
