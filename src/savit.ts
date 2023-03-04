@@ -1,12 +1,15 @@
 import { Branch, BranchI } from "./branch";
-import { Add } from "./add";
+import HDT, { HDTI } from "./objects/hdt";
+import { reconstructDirectory } from "./utils/commitLifecycle";
 import createSavitFolder from "./utils/createFolder";
 
 export interface SavitI {
   name: string;
   branch: BranchI;
-  checkout: (name?: string) => BranchI;
-  stageFile: (path: string) => boolean;
+  fileTree: HDTI;
+  snapshot: HDTI;
+  checkout: (name?: string, savitFolder?: string) => BranchI;
+  stageFile: (path: string) => Promise<string[]>;
 }
 
 export interface BranchesI {
@@ -16,17 +19,25 @@ export interface BranchesI {
 export class Savit implements SavitI {
   name: string;
   branch: BranchI;
+  fileTree: HDTI;
+  snapshot: HDTI;
   private branches: BranchesI;
 
-  constructor(name?: string) {
+  constructor(name?: string, path: string = ".") {
     this.name = name || "default";
     this.branches = {};
+    this.fileTree = new HDT(path);
+    this.snapshot = new HDT(path);
 
     const branch = new Branch("main", null);
     this.add(branch);
     this.branch = branch;
+  }
 
-    createSavitFolder();
+  async init(path?: string) {
+    await this.fileTree.getFileTree!();
+    await this.fileTree.buildTree!();
+    createSavitFolder(path);
   }
 
   private add(branch: BranchI) {
@@ -37,14 +48,20 @@ export class Savit implements SavitI {
     }
   }
 
-  checkout(name?: string): BranchI {
+  checkout(name?: string, savitFolder: string = ""): BranchI {
     if (!name) {
       console.info(`Current branch: ${this.branch.name}`);
       return this.branch;
     }
 
     if (name in this.branches) {
+      if (savitFolder) {
+        savitFolder = savitFolder + "/";
+      }
+
       this.branch = this.branches[name];
+      if (this.branch.commit)
+        reconstructDirectory(this.branch.commit, savitFolder);
       console.info(`Switched to branch: ${this.branch.name}`);
       return this.branch;
     }
@@ -55,7 +72,17 @@ export class Savit implements SavitI {
     return this.branch;
   }
 
-  stageFile(path: string): boolean {
-    return new Add().stageFile(`${__dirname}/../${path}`);
+  async stageFile(path?: string) {
+    let changes = [] as string[];
+    if (path) {
+      await this.snapshot.addNode!(path);
+      changes.push(path);
+    } else {
+      let edits = this.snapshot.compare!(
+        this.branch.commit?.parent?.snapshot.nodes
+      );
+      if (edits) changes.push(...edits);
+    }
+    return changes;
   }
 }

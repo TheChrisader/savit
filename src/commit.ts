@@ -1,36 +1,53 @@
-import sha1 from "sha1";
-import * as fs from "fs";
+import { promises as fs } from "fs";
+import { HDTI } from "./objects/hdt";
+import { ChangesI } from "./utils/commitLifecycle";
+import sha1Hash from "./utils/sha1Hash";
 
 export interface CommitI {
   id: string;
   message: string;
   parent: CommitI | null;
+  snapshot: HDTI;
   getCommitLog: () => string[];
+  generateObjects: (changes: ChangesI, dirPath: string) => void;
 }
 
 export class Commit implements CommitI {
   readonly id: string;
   parent: CommitI | null;
   message: string;
-  content: string;
+  snapshot: HDTI;
 
-  constructor(message: string, parent: CommitI | null = null) {
+  constructor(
+    message: string,
+    parent: CommitI | null = null,
+    // changes: ChangesI,
+    tree: HDTI
+  ) {
+    this.id = tree.nodes?.get("hash") as string;
     this.message = message;
     this.parent = parent;
-    this.content = this.getStore();
-    this.id = sha1(this.content);
-    this.clearStore();
+    this.snapshot = tree;
   }
 
-  private clearStore(): void {
-    fs.writeFileSync(`${__dirname}/../store.txt`, "");
-  }
-
-  private getStore(): string {
-    const readed = fs.readFileSync(`${__dirname}/../store.txt`, {
-      encoding: "utf8",
-    });
-    return readed;
+  async generateObjects(changes: ChangesI, dirPath: string = "") {
+    if (dirPath) {
+      dirPath = dirPath + "/";
+    }
+    for (let file of Object.keys(changes)) {
+      let hash = await this.snapshot.getHash!(file);
+      let folderName = hash!.substring(0, 2);
+      let fileName = hash!.substring(2);
+      try {
+        await fs.mkdir(`${dirPath}.savit/objects/${folderName}`);
+      } catch (err: any) {
+        if (err.code !== "EEXIST") console.log(err);
+      }
+      await fs.writeFile(
+        `${dirPath}.savit/objects/${folderName}/${fileName}`,
+        JSON.stringify(changes[file])
+      );
+    }
   }
 
   getCommitLog(): string[] {
